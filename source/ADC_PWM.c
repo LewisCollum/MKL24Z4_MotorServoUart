@@ -5,14 +5,17 @@
 
 struct PWM servo;
 struct PWM motor;
+struct PWM buzzer;
 
 void motor_init();
 void servo_init();
+void buzzer_init();
 
 int main() {
 
     BOARD_InitBootClocks();
 
+    buzzer_init();
     motor_init();
     servo_init();
 
@@ -29,7 +32,20 @@ int main() {
     	float slope2 = (1.0-0.0) / (4095-0);
 		float mappedValue2 = 0 + slope2*(adcVal);
     	pwm_setDuty(&motor, mappedValue2);
+
+    	float slope3 = (1.0-0.0) / (4095-0);
+		float mappedValue3 = 0 + slope3*(adcVal);
+		pwm_setDuty(&buzzer, mappedValue3);
     }
+}
+
+void buzzer_init()
+{
+	pwm_init(&buzzer, 2);
+    pwm_setMode(&buzzer);
+   	pwm_setPrescaler(&buzzer, 16);
+   	pwm_setFrequency(&buzzer, 500);
+   	pwm_enableTimer(&buzzer);
 }
 
 void motor_init()

@@ -13,18 +13,19 @@ int main() {
 
     BOARD_InitBootClocks();
 
-	SIM->SCGC5 |= 0x1800;       		   /* enable clock to Port C*/
-	pwm_init(&servo, 0);
-	PORTC->PCR[2] = 0x0400;     		   /* PTC2 used by TPM0 */
+//	SIM->SCGC5 |= 0x1800;       		   /* enable clock to Port C*/
+//	PORTC->PCR[2] = 0x0400;     		   /* PTC2 used by TPM0 channel 1 */
+
+	pwm_init(&servo, 2);
     SIM->SOPT2 |= 0x01000000;   		   /* use MCGFLLCLK as timer counter clock */
 
-
+    pwm_setMode(&servo);
+   	pwm_setFrequency(&servo, 50);
+   	pwm_setPrescaler(&servo, 16);
+   	pwm_enableTimer(&servo);
     adc_init();
 
-    pwm_setMode(&servo);
-	pwm_setFrequency(&servo, 50);
-	pwm_setPrescaler(&servo, 16);
-	pwm_enableTimer(&servo);
+
     //motor_init();
     //servo_init();
 

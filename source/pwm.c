@@ -1,10 +1,25 @@
 #include "pwm.h"
 
 void setTimer(struct PWM* pwm);
+void enablePortA();
 
 void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 {
+    enablePortA();
 	pwm->timerChoice = timerChoice;
+    switch(pwm->timerChoice)
+    {
+    case 0 :
+    	PORTA->PCR[4] = 0x0300;
+    	break;
+    case 1 :
+    	PORTA->PCR[13] = 0x0300;
+    	break;
+    case 2 :
+    	PORTA->PCR[2] = 0x0300;
+    	break;
+    }
+
 	pwm_enableClock(pwm);
 	setTimer(pwm);
 }
@@ -74,5 +89,10 @@ void pwm_enableClock(struct PWM* pwm)
 		SIM->SCGC6 |= 0x04000000;
 		break;
 	}
-	   		   /* enable clock to TPM0 */
+
+}
+
+void enablePortA()
+{
+	SIM->SCGC5 |= 0x0200;
 }

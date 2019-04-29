@@ -13,21 +13,11 @@ int main() {
 
     BOARD_InitBootClocks();
 
-//	SIM->SCGC5 |= 0x1800;       		   /* enable clock to Port C*/
-//	PORTC->PCR[2] = 0x0400;     		   /* PTC2 used by TPM0 channel 1 */
+    motor_init();
+    servo_init();
 
-	pwm_init(&servo, 2);
-    SIM->SOPT2 |= 0x01000000;   		   /* use MCGFLLCLK as timer counter clock */
-
-    pwm_setMode(&servo);
-   	pwm_setFrequency(&servo, 50);
-   	pwm_setPrescaler(&servo, 16);
-   	pwm_enableTimer(&servo);
     adc_init();
 
-
-    //motor_init();
-    //servo_init();
 
     while (1) {
     	adc_startConversion();
@@ -35,21 +25,29 @@ int main() {
     	float adcVal = (float)adc_get();
     	float mappedValue = 0.035 + slope*(adcVal);
     	pwm_setDuty(&servo, mappedValue);
+
+    	float slope2 = (1.0-0.0) / (4095-0);
+		float mappedValue2 = 0 + slope2*(adcVal);
+    	pwm_setDuty(&motor, mappedValue2);
     }
 }
 
 void motor_init()
 {
-//	setTimer(&motor, 0);
-//	pwm_setMode(&motor);
-//	pwm_setFrequency(&motor, .024);
-//	pwm_setPrescaler(&motor, 16);
-//	pwm_enableTimer(&motor);
+	pwm_init(&motor, 1);
+	pwm_setMode(&motor);
+	pwm_setPrescaler(&motor, 16);
+	pwm_setFrequency(&motor, 2400);
+	pwm_enableTimer(&motor);
 }
 
 void servo_init()
 {
-
+	pwm_init(&servo, 0);
+    pwm_setMode(&servo);
+   	pwm_setPrescaler(&servo, 16);
+   	pwm_setFrequency(&servo, 50);
+   	pwm_enableTimer(&servo);
 }
 
 

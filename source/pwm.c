@@ -22,6 +22,7 @@ void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 
 	pwm_enableClock(pwm);
 	setTimer(pwm);
+	SIM->SOPT2 |= 0x01000000;   		   /* use MCGPLLCLK/2 as timer counter clock */
 }
 
 void pwm_setMode(struct PWM* pwm)

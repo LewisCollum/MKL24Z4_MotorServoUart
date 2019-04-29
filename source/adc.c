@@ -4,8 +4,6 @@
 
 void adc_init()
 {
-	adc_enablePortC2();
-
     SIM->SCGC5 |= 0x2000;       /* clock to PORTE */
     PORTE->PCR[20] = 0;         /* PTE20 analog input */
 
@@ -24,14 +22,4 @@ uint32_t adc_get()
 {
 	return ADC0->R[0];        /* read conversion result and clear COCO flag */
 }
-
-void adc_enablePortC2()
-{
-	SIM->SCGC5 |= 0x1800;       		   /* enable clock to Port C*/
-	SIM->SCGC6 |= 0x01000000;   		   /* enable clock to TPM0 */
-	PORTC->PCR[2] = 0x0400;     		   /* PTC2 used by TPM0 */
-    SIM->SOPT2 |= 0x01000000;   		   /* use MCGFLLCLK as timer counter clock */
-
-}
-
 

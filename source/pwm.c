@@ -1,14 +1,18 @@
 #include "pwm.h"
 
-void pwm_init(struct PWM* pwm)
+void setTimer(struct PWM* pwm);
+
+void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 {
-	pwm_setTimer(pwm, 0);
+	pwm->timerChoice = timerChoice;
+	pwm_enableClock(pwm);
+	setTimer(pwm);
+}
+
+void pwm_setMode(struct PWM* pwm)
+{
 	pwm_disableTimer(pwm);
     pwm->timer->CONTROLS[1].CnSC = pwm_pulsehigh | edge_aligned;
-
-    pwm_setPrescaler(pwm, 16);
-    pwm_enableTimer(pwm);
-    pwm_setFrequency(pwm, 50);
 }
 
 void pwm_setPrescaler(struct PWM* pwm, uint16_t prescaler) {
@@ -42,10 +46,9 @@ void pwm_enableTimer(struct PWM* pwm)
 	pwm->timer->SC |= 0b1000;
 }
 
-void pwm_setTimer(struct PWM* pwm, uint8_t timerChoice)
+void setTimer(struct PWM* pwm)
 {
-	switch(timerChoice) {
-
+	switch(pwm->timerChoice) {
 	case 0 :
 		pwm->timer = TPM0;
 		break;
@@ -55,6 +58,21 @@ void pwm_setTimer(struct PWM* pwm, uint8_t timerChoice)
 	case 2 :
 		pwm->timer = TPM2;
 		break;
-
 	}
+}
+
+void pwm_enableClock(struct PWM* pwm)
+{
+	switch(pwm->timerChoice) {
+	case 0:
+		SIM->SCGC6 |= 0x01000000;
+		break;
+	case 1:
+		SIM->SCGC6 |= 0x02000000;
+		break;
+	case 2:
+		SIM->SCGC6 |= 0x04000000;
+		break;
+	}
+	   		   /* enable clock to TPM0 */
 }

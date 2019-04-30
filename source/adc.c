@@ -60,7 +60,7 @@ void adc_convert(struct ADC* adc)
 
 uint32_t adc_get()
 {
-	return ADC0->R[0];        /* read conversion result and clear COCO flag */
+	return ADC0->R[0];
 }
 
 void readyConversion(struct ADC* adc)

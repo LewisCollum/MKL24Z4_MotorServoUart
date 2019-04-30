@@ -2,8 +2,8 @@
 
 void setTimerClock(struct PWM* pwm);
 void setPinMuxForTimer(struct PWM* pwm);
-void setMode(struct PWM* pwm);
 void setPwmOptions(struct PWM* pwm);
+void enableTimerClock(struct PWM* pwm);
 
 struct PwmPort
 {
@@ -44,11 +44,6 @@ void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 	setPinMuxForTimer(pwm);
 	setTimerClock(pwm);
 	enableTimerClock(pwm);
-	setMode(pwm);
-}
-
-void setMode(struct PWM* pwm)
-{
 	pwm_disableTimer(pwm);
 	setPwmOptions(pwm);
 }

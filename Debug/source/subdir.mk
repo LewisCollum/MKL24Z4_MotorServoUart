@@ -6,20 +6,26 @@
 C_SRCS += \
 ../source/ADC_PWM.c \
 ../source/adc.c \
+../source/mapper.c \
 ../source/mtb.c \
-../source/pwm.c 
+../source/pwm.c \
+../source/range_pair.c 
 
 OBJS += \
 ./source/ADC_PWM.o \
 ./source/adc.o \
+./source/mapper.o \
 ./source/mtb.o \
-./source/pwm.o 
+./source/pwm.o \
+./source/range_pair.o 
 
 C_DEPS += \
 ./source/ADC_PWM.d \
 ./source/adc.d \
+./source/mapper.d \
 ./source/mtb.d \
-./source/pwm.d 
+./source/pwm.d \
+./source/range_pair.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

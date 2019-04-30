@@ -1,25 +1,60 @@
 #include "adc.h"
-#include "MKL25Z4.h"
-#define dcmotorMod 2047
 
-void adc_init()
+void readyConversion(struct ADC* adc);
+void enableClock();
+void setModeSingleEnded();
+
+struct AdcPort
 {
-    SIM->SCGC5 |= 0x2000;       /* clock to PORTE */
-    PORTE->PCR[20] = 0;         /* PTE20 analog input */
+	PORT_Type* port;
+	uint8_t pin;
+};
 
-    SIM->SCGC6 |= 0x8000000;    /* clock to ADC0 */
+const struct AdcPort adcPorts[14] = {
+	{PORTE,20}, {PORTE,22}, {PORTE,21}
+};
+
+const uint8_t channels[14] = {
+	0,3,4,5,6,7,8,9,11,12,13,14,15,23
+};
+
+void adc_init(struct ADC* adc, uint8_t channel)
+{
+	adc->channel = channel;
+
+	enableClock();
     ADC0->SC2 &= ~0x40;         /* software trigger */
     ADC0->CFG1 = 0x40 | 0x10 | 0x04 | 0x00;
+
+    //readyConversion(adc);
+	adcPorts[channel].port->PCR[adcPorts[channel].pin] = 0;
+	setModeSingleEnded();
 }
 
-void adc_startConversion()
+void adc_convert(struct ADC* adc)
 {
-	ADC0->SC1[0] = 0;           /* start conversion on channel 0 */
+	readyConversion(adc);
 	while(!(ADC0->SC1[0] & 0x80)) { } /* wait for conversion complete */
 }
 
 uint32_t adc_get()
 {
 	return ADC0->R[0];        /* read conversion result and clear COCO flag */
+}
+
+void readyConversion(struct ADC* adc)
+{
+	ADC0->SC1[0] &= ~0xF;
+    ADC0->SC1[0] |= 0xF & channels[adc->channel];
+}
+
+void setModeSingleEnded()
+{
+	ADC0->SC1[0] &= ~0b10000;
+}
+
+void enableClock()
+{
+	SIM->SCGC6 |= 0x8000000;
 }
 

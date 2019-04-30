@@ -14,7 +14,7 @@ source/ADC_PWM.o source/ADC_PWM.d: ../source/ADC_PWM.c \
  C:\Users\ulab\Downloads\ACD_PWM\drivers/fsl_clock.h \
  C:\Users\ulab\Downloads\ACD_PWM\drivers/fsl_common.h \
  C:\Users\ulab\Downloads\ACD_PWM\drivers/fsl_gpio.h ../source/pwm.h \
- ../source/adc.h
+ ../source/adc.h ../source/mapper.h ../source/range_pair.h
 
 C:\Users\ulab\Downloads\ACD_PWM\CMSIS/MKL25Z4.h:
 
@@ -49,3 +49,7 @@ C:\Users\ulab\Downloads\ACD_PWM\drivers/fsl_gpio.h:
 ../source/pwm.h:
 
 ../source/adc.h:
+
+../source/mapper.h:
+
+../source/range_pair.h:

@@ -12,8 +12,8 @@ struct PWM buzzer;
 struct ADC dial;
 struct ADC light;
 
-struct RangePair dialRange = {0,4095};
-struct RangePair lightRange = {750, 3250};
+struct RangePair dialRange = {0,254};
+struct RangePair lightRange = {20, 220};
 struct RangePair servoDutyRange = {0.03, 0.125};
 struct RangePair motorDutyRange = {0, 1};
 struct RangePair buzzerFrequencyRange = {500, 2500};
@@ -46,6 +46,7 @@ int main() {
     	adc_convert(&light);
     	double adcSample = (double)adc_get();
     	//sweep_update(&sweep, time);
+
     	//mapper_init(&mapper, dialRange, servoDutyRange);
     	mapper_init(&mapper, lightRange, servoDutyRange);
     	pwm_setDuty(&servo, mapper_map(&mapper, adcSample));

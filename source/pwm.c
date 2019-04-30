@@ -25,13 +25,11 @@ const struct Timer timers[3] = {
 		{0x01000000,TPM0}, {0x02000000,TPM1}, {0x04000000, TPM2}
 };
 
-
 enum PwmOptions {
 	pwmoptions_pulsehigh = 0x20,
 	pwmoptions_edgealigned = 0x08,
 	pwmoptions_pinMux3 = 0x0300
 };
-
 
 struct Clock {
 	uint32_t frequency;

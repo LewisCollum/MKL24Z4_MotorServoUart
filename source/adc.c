@@ -7,6 +7,7 @@ void setChannelPinToAnalog(struct ADC* adc);
 void setCFG1options();
 void clearChannel();
 void setSC3options();
+void waitForConversion();
 
 struct AdcPort
 {
@@ -54,7 +55,7 @@ void adc_init(struct ADC* adc, uint8_t channel)
 void adc_convert(struct ADC* adc)
 {
 	readyConversion(adc);
-	while(!(ADC0->SC1[0] & 0x80)) { } /* wait for conversion complete */
+	waitForConversion();
 }
 
 uint32_t adc_get()
@@ -99,4 +100,9 @@ void clearChannel()
 void setSC3options()
 {
     ADC0->SC3 = SC3options_contionuous | SC3options_4bit;
+}
+
+void waitForConversion()
+{
+	while(!(ADC0->SC1[0] & 0x80)) { }
 }

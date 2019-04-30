@@ -5,6 +5,7 @@
 #include "mapper.h"
 #include "range_pair.h"
 #include "sweep.h"
+#include "peripherals.h"
 
 struct PWM servo;
 struct PWM motor;
@@ -20,8 +21,6 @@ struct RangePair buzzerFrequencyRange = {500, 2500};
 struct Mapper mapper;
 struct Sweep sweep;
 
-void enablePortA();
-void enablePortE();
 void motor_init();
 void servo_init();
 void buzzer_init();
@@ -31,13 +30,11 @@ void light_init();
 int main() {
 
     BOARD_InitBootClocks();
-    enablePortA();
+    BOARD_InitBootPeripherals();
 
     buzzer_init();
     motor_init();
     servo_init();
-
-    enablePortE();
 
     dial_init();
     light_init();
@@ -65,16 +62,6 @@ int main() {
 		pwm_setDuty(&buzzer, .5);
 		//time++;
     }
-}
-
-void enablePortA()
-{
-	SIM->SCGC5 |= 0x0200;
-}
-
-void enablePortE()
-{
-    SIM->SCGC5 |= 0x2000;
 }
 
 void buzzer_init()

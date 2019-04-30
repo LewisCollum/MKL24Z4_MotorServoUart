@@ -2,33 +2,42 @@
 
 void setTimer(struct PWM* pwm);
 void enablePortA();
+void setTimerCounterClockToHalfMCGPLLCLK();
+//void setPinMux(uint8_t );
+
+struct PwmPort
+{
+	PORT_Type* port;
+	uint8_t pin;
+};
+
+const struct PwmPort pwmPorts[3] = {
+		{PORTA, 4}, {PORTA, 13}, {PORTA, 2}
+};
+
+enum pwmoptions {
+	pwmoptions_pulsehigh = 0x20,
+	pwmoptions_edgealigned = 0x08,
+	pwmoptions_pinMux3 = 0x0300
+};
 
 void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 {
     enablePortA();
 	pwm->timerChoice = timerChoice;
-    switch(pwm->timerChoice)
-    {
-    case 0 :
-    	PORTA->PCR[4] = 0x0300;
-    	break;
-    case 1 :
-    	PORTA->PCR[13] = 0x0300;
-    	break;
-    case 2 :
-    	PORTA->PCR[2] = 0x0300;
-    	break;
-    }
+
+    pwmPorts[timerChoice].port->PCR[pwmPorts[timerChoice].pin] = pwmoptions_pinMux3;
 
 	pwm_enableClock(pwm);
 	setTimer(pwm);
-	SIM->SOPT2 |= 0x01000000;   		   /* use MCGPLLCLK/2 as timer counter clock */
+	setTimerCounterClockToHalfMCGPLLCLK();
+
 }
 
 void pwm_setMode(struct PWM* pwm)
 {
 	pwm_disableTimer(pwm);
-    pwm->timer->CONTROLS[1].CnSC = pwm_pulsehigh | edge_aligned;
+    pwm->timer->CONTROLS[1].CnSC = pwmoptions_pulsehigh | pwmoptions_edgealigned;
 }
 
 void pwm_setPrescaler(struct PWM* pwm, uint16_t prescaler) {
@@ -79,7 +88,8 @@ void setTimer(struct PWM* pwm)
 
 void pwm_enableClock(struct PWM* pwm)
 {
-	switch(pwm->timerChoice) {
+	switch(pwm->timerChoice)
+	{
 	case 0:
 		SIM->SCGC6 |= 0x01000000;
 		break;
@@ -97,3 +107,12 @@ void enablePortA()
 {
 	SIM->SCGC5 |= 0x0200;
 }
+void setTimerCounterClockToHalfMCGPLLCLK()
+{
+	SIM->SOPT2 |= 0x01000000;
+}
+
+//void setPinMux(uint8_t )
+//{
+//
+//}

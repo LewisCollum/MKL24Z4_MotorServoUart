@@ -100,4 +100,3 @@ void setSC3options()
 {
     ADC0->SC3 = SC3options_contionuous | SC3options_4bit;
 }
-

@@ -1,7 +1,6 @@
 #include "pwm.h"
 
-void enablePortA();
-void setTimerCounterClockToHalfMCGPLLCLK();
+void setTimerClock(struct PWM* pwm);
 void setPinMuxForTimer(struct PWM* pwm);
 void setMode(struct PWM* pwm);
 void setPwmOptions(struct PWM* pwm);
@@ -19,27 +18,34 @@ const struct PwmPort pwmPorts[3] = {
 struct Timer
 {
 	uint32_t clockEnableOption;
-	TPM_Type* tpm;
-
+	TPM_Type* timer;
 };
+
 const struct Timer timers[3] = {
 		{0x01000000,TPM0}, {0x02000000,TPM1}, {0x04000000, TPM2}
 };
 
 
-enum pwmoptions {
+enum PwmOptions {
 	pwmoptions_pulsehigh = 0x20,
 	pwmoptions_edgealigned = 0x08,
 	pwmoptions_pinMux3 = 0x0300
 };
 
+
+struct Clock {
+	uint32_t frequency;
+	uint32_t selectOption;
+};
+
+const struct Clock clock48MHz = {.frequency = 48e6, .selectOption = 0x01000000};
+
 void pwm_init(struct PWM* pwm, uint8_t timerChoice)
 {
-    enablePortA();
 	pwm->timerChoice = timerChoice;
 	setPinMuxForTimer(pwm);
-	pwm_enableClock(pwm);
-	setTimerCounterClockToHalfMCGPLLCLK();
+	setTimerClock(pwm);
+	enableTimerClock(pwm);
 	setMode(pwm);
 }
 
@@ -61,7 +67,7 @@ void pwm_setPrescaler(struct PWM* pwm, uint16_t prescaler) {
 void pwm_setFrequency(struct PWM* pwm, uint16_t frequency)
 {
 	pwm->frequency = frequency;
-	pwm->timer->MOD = 48e6/pwm->frequency/pwm->prescaler;
+	pwm->timer->MOD = pwm->clockFrequency/pwm->frequency/pwm->prescaler;
 }
 
 void pwm_setDuty(struct PWM* pwm, float dutyPercent)
@@ -80,37 +86,16 @@ void pwm_enableTimer(struct PWM* pwm)
 	pwm->timer->SC |= 0x08;
 }
 
-void pwm_enableClock(struct PWM* pwm)
+void enableTimerClock(struct PWM* pwm)
 {
 	SIM->SCGC6 |= timers[pwm->timerChoice].clockEnableOption;
-	pwm->timer = timers[pwm->timerChoice].tpm;
-
-//	switch(pwm->timerChoice)
-//	{
-//	case 0:
-//		SIM->SCGC6 |= 0x01000000;
-//		pwm->timer = TPM0;
-//		break;
-//	case 1:
-//		SIM->SCGC6 |= 0x02000000;
-//		pwm->timer = TPM1;
-//		break;
-//	case 2:
-//		SIM->SCGC6 |= 0x04000000;
-//		pwm->timer = TPM2;
-//		break;
-//	}
-
+	pwm->timer = timers[pwm->timerChoice].timer;
 }
 
-void enablePortA()
+void setTimerClock(struct PWM* pwm)
 {
-	SIM->SCGC5 |= 0x0200;
-}
-
-void setTimerCounterClockToHalfMCGPLLCLK()
-{
-	SIM->SOPT2 |= 0x01000000;
+	pwm->clockFrequency = clock48MHz.frequency;
+	SIM->SOPT2 |= clock48MHz.selectOption;
 }
 
 void setPinMuxForTimer(struct PWM* pwm)

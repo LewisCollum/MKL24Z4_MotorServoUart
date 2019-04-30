@@ -4,13 +4,12 @@
 #include <stdint.h>
 #include "MKL25Z4.h"
 
-
-
 struct PWM {
 	uint8_t timerChoice;
 	TPM_Type* timer;
 	uint16_t frequency;
 	uint16_t prescaler;
+	uint32_t clockFrequency;
 	float duty;
 };
 

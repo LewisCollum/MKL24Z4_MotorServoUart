@@ -4,6 +4,7 @@
 #include "adc.h"
 #include "mapper.h"
 #include "range_pair.h"
+#include "sweep.h"
 
 struct PWM servo;
 struct PWM motor;
@@ -17,6 +18,7 @@ struct RangePair servoDutyRange = {0.035, 0.125};
 struct RangePair motorDutyRange = {0, 1};
 struct RangePair buzzerFrequencyRange = {500, 2500};
 struct Mapper mapper;
+struct Sweep sweep;
 
 void motor_init();
 void servo_init();
@@ -36,23 +38,25 @@ int main() {
 
     dial_init();
     light_init();
+    sweep_init(&sweep, dialRange, dialRange.min, 8, 20);
 
-
-
+    int time = 0;
     while (1) {
     	adc_convert(&dial);
     	//adc_convert(&light);
-    	double adcSample = (double)adc_get();
-
+    	//double adcSample = (double)adc_get();
+    	sweep_update(&sweep, time);
     	mapper_init(&mapper, dialRange, servoDutyRange);
-    	pwm_setDuty(&servo, mapper_map(&mapper, adcSample));
+    	//pwm_setDuty(&servo, mapper_map(&mapper, adcSample));
+    	pwm_setDuty(&servo, mapper_map(&mapper, sweep.pos));
 
     	mapper_init(&mapper, dialRange, motorDutyRange);
-    	pwm_setDuty(&motor, mapper_map(&mapper, adcSample));
+    	//pwm_setDuty(&motor, mapper_map(&mapper, adcSample));
 
     	mapper_init(&mapper, dialRange, buzzerFrequencyRange);
-    	pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
+    	//pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
 		pwm_setDuty(&buzzer, .5);
+		time++;
     }
 }
 

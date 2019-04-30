@@ -1,8 +1,12 @@
 #include "adc.h"
 
 void readyConversion(struct ADC* adc);
-void enableClock();
+void enableClockToADC();
 void setModeSingleEnded();
+void setChannelPinToAnalog(struct ADC* adc);
+void setCFG1options();
+void clearChannel();
+void setSC3options();
 
 struct AdcPort
 {
@@ -40,11 +44,10 @@ void adc_init(struct ADC* adc, uint8_t channel)
 {
 	adc->channel = channel;
 
-	enableClock();
+	enableClockToADC();
     ADC0->SC2 &= SC2softwareTrigger;
-    ADC0->CFG1 = CFG1options_divideRatioHalf | CFG1options_longSampleTime | CFG1options_8BitConversionAndBusClock;
-
-	adcPorts[channel].port->PCR[adcPorts[channel].pin] = 0;
+    setCFG1options();
+    setChannelPinToAnalog(adc);
 	setModeSingleEnded();
 }
 
@@ -61,8 +64,8 @@ uint32_t adc_get()
 
 void readyConversion(struct ADC* adc)
 {
-    ADC0->SC3 = SC3options_contionuous | SC3options_4bit;
-	ADC0->SC1[0] &= ~0xF;
+	setSC3options();
+    clearChannel();
     ADC0->SC1[0] |= 0xF & channels[adc->channel];
 
 }
@@ -72,8 +75,29 @@ void setModeSingleEnded()
 	ADC0->SC1[0] &= ~0b10000;
 }
 
-void enableClock()
+void enableClockToADC()
 {
 	SIM->SCGC6 |= 0x8000000;
+}
+
+void setChannelPinToAnalog(struct ADC* adc)
+{
+	adcPorts[adc->channel].port->PCR[adcPorts[adc->channel].pin] = 0;
+}
+
+void setCFG1options()
+{
+    ADC0->CFG1 = CFG1options_divideRatioHalf | CFG1options_longSampleTime | CFG1options_8BitConversionAndBusClock;
+}
+
+void clearChannel()
+{
+	ADC0->SC1[0] &= ~0xF;
+
+}
+
+void setSC3options()
+{
+    ADC0->SC3 = SC3options_contionuous | SC3options_4bit;
 }
 

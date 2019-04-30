@@ -13,7 +13,7 @@ struct ADC dial;
 struct ADC light;
 
 struct RangePair dialRange = {0,254};
-struct RangePair lightRange = {20, 220};
+struct RangePair lightRange = {50, 220};
 struct RangePair servoDutyRange = {0.03, 0.125};
 struct RangePair motorDutyRange = {0, 1};
 struct RangePair buzzerFrequencyRange = {500, 2500};
@@ -67,7 +67,6 @@ int main() {
 void buzzer_init()
 {
 	pwm_init(&buzzer, 2);
-    pwm_setMode(&buzzer);
    	pwm_setPrescaler(&buzzer, 16);
    	pwm_setDuty(&buzzer, .5);
    	pwm_enableTimer(&buzzer);
@@ -76,7 +75,6 @@ void buzzer_init()
 void motor_init()
 {
 	pwm_init(&motor, 1);
-	pwm_setMode(&motor);
 	pwm_setPrescaler(&motor, 8);
 	pwm_setFrequency(&motor, 2400);
 	pwm_enableTimer(&motor);
@@ -85,7 +83,6 @@ void motor_init()
 void servo_init()
 {
 	pwm_init(&servo, 0);
-    pwm_setMode(&servo);
    	pwm_setPrescaler(&servo, 16);
    	pwm_setFrequency(&servo, 50);
    	pwm_enableTimer(&servo);

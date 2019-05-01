@@ -6,15 +6,15 @@
 
 struct Sweep {
 	struct RangePair range;
-	uint32_t pos;
-	uint32_t increment;
-	uint32_t updateInterval;
-	uint32_t lastUpdate;
-	struct RangePair rangePair;
-
+	int32_t position;
+	uint32_t updateMillis;
+	uint32_t lastMillis;
 };
 
-void sweep_init(struct Sweep* sweep, struct RangePair pair, uint32_t curPos, uint32_t incrementSize, uint32_t updateInterval);
-void sweep_update(struct Sweep* sweep, uint32_t millis);
+void sweep_setRange(struct Sweep* sweep, struct RangePair sweepRange);
+void sweep_setUpdateMillis(struct Sweep* sweep, uint32_t updateMillis);
+void sweep_setPeriod(struct Sweep* sweep, uint16_t millis);
+void sweep_setPosition(struct Sweep* sweep, int32_t position);
+void sweep_update(struct Sweep* sweep, uint32_t currentMillis);
 
 #endif

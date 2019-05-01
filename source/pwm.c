@@ -12,7 +12,7 @@ struct PwmPort
 };
 
 const struct PwmPort pwmPorts[3] = {
-		{PORTA, 4}, {PORTA, 13}, {PORTA, 2}
+		{PORTC, 2}, {PORTA, 13}, {PORTA, 2}
 };
 
 struct Timer
@@ -28,7 +28,10 @@ const struct Timer timers[3] = {
 enum PwmOptions {
 	pwmoptions_pulsehigh = 0x20,
 	pwmoptions_edgealigned = 0x08,
-	pwmoptions_pinMux3 = 0x0300
+	pwmoptions_pinMux3 = 0x0300,
+	pwmoptions_pinMux4 = 0x0400,
+	channelOne = 1,
+	channelZero = 0,
 };
 
 struct Clock {
@@ -93,7 +96,13 @@ void setTimerClock(struct PWM* pwm)
 
 void setPinMuxForTimer(struct PWM* pwm)
 {
-	pwmPorts[pwm->timerChoice].port->PCR[pwmPorts[pwm->timerChoice].pin] = pwmoptions_pinMux3;
+	if (pwm->timerChoice == 0) {
+		pwmPorts[pwm->timerChoice].port->PCR[pwmPorts[pwm->timerChoice].pin] = pwmoptions_pinMux4;
+	}
+	else {
+		pwmPorts[pwm->timerChoice].port->PCR[pwmPorts[pwm->timerChoice].pin] = pwmoptions_pinMux3;
+	}
+
 }
 
 void setPwmOptions(struct PWM* pwm)

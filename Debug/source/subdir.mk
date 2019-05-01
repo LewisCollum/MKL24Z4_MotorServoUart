@@ -10,7 +10,8 @@ C_SRCS += \
 ../source/mtb.c \
 ../source/pwm.c \
 ../source/range_pair.c \
-../source/sweep.c 
+../source/sweep.c \
+../source/tick.c 
 
 OBJS += \
 ./source/ADC_PWM.o \
@@ -19,7 +20,8 @@ OBJS += \
 ./source/mtb.o \
 ./source/pwm.o \
 ./source/range_pair.o \
-./source/sweep.o 
+./source/sweep.o \
+./source/tick.o 
 
 C_DEPS += \
 ./source/ADC_PWM.d \
@@ -28,7 +30,8 @@ C_DEPS += \
 ./source/mtb.d \
 ./source/pwm.d \
 ./source/range_pair.d \
-./source/sweep.d 
+./source/sweep.d \
+./source/tick.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

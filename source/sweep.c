@@ -1,22 +1,38 @@
 #include "sweep.h"
 #include <stdint.h>
 
-void sweep_init(struct Sweep* sweep, struct RangePair pair, uint32_t curPos, uint32_t incrementSize, uint32_t updateInterval){
-	sweep->pos = curPos;
-	sweep->increment = incrementSize;
-	sweep->updateInterval = updateInterval;
-	sweep->lastUpdate = 0;
-	sweep->rangePair = pair;
+static int32_t increment = 1;
+
+void sweep_setPeriod(struct Sweep* sweep, uint16_t millis) {
+	sweep->range = (struct RangePair){0, millis/sweep->updateMillis};
 }
 
-void sweep_update(struct Sweep* sweep, uint32_t millis){
-	if((millis - sweep->lastUpdate) >= sweep->updateInterval)
-	{
-		sweep->lastUpdate = millis;
-		sweep->pos += sweep->increment;
-		if((sweep->pos >= sweep->rangePair.max) || (sweep->pos <= sweep->rangePair.min))
-		{
-			sweep->increment = -sweep->increment;
-		}
+void sweep_setRange(struct Sweep* sweep, struct RangePair sweepRange) {
+	sweep->range = sweepRange;
+}
+
+void sweep_setUpdateMillis(struct Sweep* sweep, uint32_t updateMillis) {
+	sweep->updateMillis = updateMillis;
+}
+
+void sweep_setPosition(struct Sweep* sweep, int32_t position) {
+	if (position < sweep->range.min)
+		sweep->position = sweep->range.min;
+	else if (position > sweep->range.max)
+		sweep->position = sweep->range.max;
+	else
+		sweep->position = position;
+}
+
+void updateIncrement(struct Sweep* sweep) {
+	if(sweep->position == sweep->range.max || sweep->position == sweep->range.min)
+		increment = -increment;
+}
+
+void sweep_update(struct Sweep* sweep, uint32_t currentMillis){
+	if(currentMillis - sweep->lastMillis >= sweep->updateMillis) {
+		sweep_setPosition(sweep, sweep->position + increment);
+		updateIncrement(sweep);
+		sweep->lastMillis = currentMillis;
 	}
 }

@@ -19,7 +19,7 @@ void keypad_init(struct Keypad* keypad) {
 		keypad->portsOutput[i].port->PCR[keypad->portsOutput[i].pin] = pin_gpio | pin_pullup;
 		keypad->portsOutput[i].gpio->PDDR |= 1 << keypad->portsOutput[i].pin;
 
-		keypad->portsInput[i].port->PCR[keypad->portsInput[i].pin] = pin_gpio | pin_pullup | pin_interrupt;
+		keypad->portsInput[i].port->PCR[keypad->portsInput[i].pin] = pin_gpio | pin_pullup | pin_interruptFalling;
 		keypad->portsInput[i].gpio->PDDR &= ~(1 << keypad->portsInput[i].pin);
 	}
 

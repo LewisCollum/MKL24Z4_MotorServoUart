@@ -77,13 +77,14 @@ void lcdClearRow(unsigned int row) {
 }
 
 void lcdWriteDataToRow(unsigned char data, unsigned int row) {
-	lcdSetRowColumn(row, lcdCursorColumn[row]);
-	if (clearEnabledAtMax && isColumnMaxAtRow(row)) {
-		lcdClearRow(row);
+	if (data) {
+		lcdSetRowColumn(row, lcdCursorColumn[row]);
+		if (clearEnabledAtMax && isColumnMaxAtRow(row)) {
+			lcdClearRow(row);
+		}
+		lcdWriteData(data);
+		lcdCursorColumn[row]++;
 	}
-	lcdWriteData(data);
-	lcdCursorColumn[row]++;
-
 }
 
 void lcdEnableClearAtColumnMax(unsigned int max) {

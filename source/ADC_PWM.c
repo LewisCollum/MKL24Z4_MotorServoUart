@@ -10,11 +10,12 @@
 #include "lcd.h"
 #include "uart.h"
 #include "keypad.h"
+#include <string.h>
 
 void lcdInitDecorated() {
 	lcdInit();
 	lcdCommand(lcd4Bit | lcd2Line | lcdSkinny);
-	lcdCommand(lcdOn | lcdCursorOn | lcdCursorBlinkOn);
+	lcdCommand(lcdOn);
 	lcdCommand(lcdClear);
 	lcdEnableClearAtColumnMax(16);
 }
@@ -39,20 +40,25 @@ struct RangePair lightRange = {50, 220};
 struct Mapper mapper;
 
 struct Keypad keypad = {
-	.portsOutput = {{PORTC, PTC, 0},{PORTC, PTC, 1},{PORTC, PTC, 2},{PORTC, PTC, 3}},
+	.portsOutput = {{PORTC, PTC, 0},{PORTC, PTC, 1},{PORTC, PTC, 3},{PORTC, PTC, 4}},
 	.portsInput = {{PORTD, PTD, 0},{PORTD, PTD, 1},{PORTD, PTD, 2},{PORTD, PTD, 3}}
 };
 
 
-enum SystemState {systemState_waiting, systemState_dial, systemState_light, systemState_sweep, systemState_servoUart, systemState_motorUart} systemState;
-enum UartState {uartState_waiting, uartState_sending, uartState_fetching} uartState;
-enum LcdState {lcdState_waiting, lcdState_selecting, lcdState_updateMode} lcdState;
+static volatile enum SystemState {systemState_waiting, systemState_selecting} systemState;
 
-enum AdcState {adcState_disabled, adcState_enabled} adcState;
-enum SweepState {sweepState_disabled, sweepState_enabled} sweepState;
+static volatile enum UartState {uartState_waiting, uartState_sending, uartState_fetching} uartState;
+static volatile enum LcdState {lcdState_waiting, lcdState_selecting,
+	lcdState_updateMode, lcdState_updateAngle} lcdState;
+static volatile enum PwmState {pwmState_waiting, pwmState_dial, pwmState_light,
+	pwmState_sweep, pwmState_servoUart, pwmState_motorUart} pwmState;
 
-static uint8_t keypadKey;
-static uint8_t uartKey;
+static volatile enum AdcState {adcState_waiting, adcState_reading, adcState_ready} adcState;
+static volatile enum SweepState {sweepState_disabled, sweepState_enabled} sweepState;
+
+static char keypadKey;
+static char uartKey;
+static uint8_t adcSample;
 
 void motor_init();
 void servo_init();
@@ -70,65 +76,201 @@ int main() {
 	BOARD_InitBootClocks();
     BOARD_InitBootPeripherals();
 
-//    buzzer_init();
-//    motor_init();
-//    servo_init();
-//    dial_init();
-//    light_init();
-//    tick_init();
-//    sweep_init();
+    buzzer_init();
+    motor_init();
+    servo_init();
+    dial_init();
+    light_init();
+    tick_init();
+    sweep_init();
     lcdInitDecorated();
     keypad_init(&keypad);
+    uartInit();
 
     __enable_irq();
 
     while (1) {
-//    	//adc_convert(&dial);
-//    	//adc_convert(&light);
-//    	//double adcSample = (double)adc_get();
-//    	//sweep_update(&sweep, time);
-//    	sweep_update(&sweep, tick_getCurrentMillis());
-//
-//    	//mapper_init(&mapper, dialRange, servoDutyRange);
-//    	//mapper_init(&mapper, lightRange, servoDutyRange);
-//    	mapper_init(&mapper, sweep_getRange(&sweep), servoDutyRange);
-//    	//pwm_setDuty(&servo, mapper_map(&mapper, adcSample));
-//    	pwm_setDuty(&servo, mapper_map(&mapper, sweep_getPosition(&sweep)));
-//
-//    	//mapper_init(&mapper, dialRange, motorDutyRange);
-//    	mapper_init(&mapper, lightRange, motorDutyRange);
-//    	//pwm_setDuty(&motor, mapper_map(&mapper, adcSample));
-//
-//    	//mapper_init(&mapper, dialRange, buzzerFrequencyRange);
-//    	mapper_init(&mapper, lightRange, buzzerFrequencyRange);
-//    	//pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
-//		pwm_setDuty(&buzzer, .5);
+
+    	switch(pwmState) {
+    	case pwmState_waiting:
+    		break;
+
+    	case pwmState_dial:
+    		mapper_init(&mapper, dialRange, servoDutyRange);
+    		pwm_setDuty(&servo, mapper_map(&mapper, adcSample));
+
+    		mapper_init(&mapper, dialRange, motorDutyRange);
+    		pwm_setDuty(&motor, mapper_map(&mapper, adcSample));
+
+			mapper_init(&mapper, dialRange, buzzerFrequencyRange);
+			pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
+			pwm_setDuty(&buzzer, .5);
+    		break;
+
+    	case pwmState_light:
+    		mapper_init(&mapper, lightRange, servoDutyRange);
+    		pwm_setDuty(&servo, mapper_map(&mapper, adcSample));
+
+    		mapper_init(&mapper, lightRange, motorDutyRange);
+    		pwm_setDuty(&motor, mapper_map(&mapper, adcSample));
+
+			mapper_init(&mapper, lightRange, buzzerFrequencyRange);
+			pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
+			pwm_setDuty(&buzzer, .5);
+    		break;
+
+    	case pwmState_sweep:
+    		pwm_setDuty(&buzzer, 0);
+    		pwm_setDuty(&motor, motorDutyRange.min);
+    		sweep_update(&sweep, tick_getCurrentMillis());
+    		mapper_init(&mapper, sweep_getRange(&sweep), servoDutyRange);
+    		pwm_setDuty(&servo, mapper_map(&mapper, sweep_getPosition(&sweep)));
+    		break;
+
+    	case pwmState_servoUart:
+    		pwm_setDuty(&motor, motorDutyRange.min);
+    		pwm_setDuty(&buzzer, 0);
+    		break;
+
+    	case pwmState_motorUart:
+    		pwm_setDuty(&servo, servoDutyRange.min);
+    		pwm_setDuty(&buzzer, 0);
+    		break;
+
+    	}
+
+    	__disable_irq();
+    	switch(lcdState) {
+    	case lcdState_waiting:
+    		break;
+
+    	case lcdState_selecting:
+    		lcdClearRow(0);
+    		lcdClearRow(1);
+    		char message[] = "Select [1-5]";
+    		for (int i = 0; i <= 12; ++i) { //TODO add write string to LCD module
+    			uartSend(message[i]);
+    			while(uartIsSending());
+    			lcdWriteDataToRow(message[i], 0);
+    		}
+    		lcdState = lcdState_waiting;
+    		break;
+
+    	case lcdState_updateMode:
+    		lcdClearRow(0);
+    		lcdClearRow(1);
+    		char modeMessage[] = "Mode: ";
+    		char keyCopy[1];
+    		strcpy(keyCopy, &keypadKey);
+    		strcat(modeMessage, keyCopy);
+    		for (int i = 0; i <= 7; ++i) { //TODO add write string to LCD module
+    			uartSend(modeMessage[i]);
+    			while(uartIsSending());
+    			lcdWriteDataToRow(modeMessage[i], 0);
+    		}
+    		lcdState = lcdState_waiting;
+    		break;
+
+    	case lcdState_updateAngle:
+    		//char angle[4] =
+    		break;
+    	}
+    	__enable_irq();
+
+    	switch(adcState) {
+    	case adcState_waiting:
+    		break;
+
+    	case adcState_reading:
+    		switch(pwmState) {
+    		case pwmState_dial:
+    			adc_convert(&dial);
+    			break;
+
+    		case pwmState_light:
+    			adc_convert(&light);
+    			break;
+
+    		default:
+    			break;
+    		}
+    		break;
+
+		case adcState_ready:
+			adcSample = adc_get();
+			adcState = adcState_waiting;
+    		break;
+    	}
     }
     return 0;
 }
 
-void tick_handler(){}
+void tick_handler() {
+	switch(adcState) {
+	case adcState_waiting:
+		adcState = adcState_reading;
+		break;
+
+	case adcState_reading:
+		adcState = adcState_ready;
+		break;
+
+	default:
+		break;
+	}
+}
 
 void UART0_IRQHandler() {
 	uartKey = UART0->D;
+	lcdWriteDataToRow(uartKey, 1);
 }
 
 void PORTD_IRQHandler() {
 	keypadKey = keypad_getPressedKey(&keypad);
-	lcdWriteDataToRow(keypadKey, 1);
-//	if (key == '#') selectionState = prepare;
-//	else if (selectionState == selecting) {
-//		switch (key) {
-//		case '1': selectionState = pot; break;
-//		case '2': selectionState = light; break;
-//		case '3': selectionState = scan; break;
-//		case '4': selectionState = servoUart; break;
-//		case '5': selectionState = motorUart; break;
-//		default: selectionState = waiting; break;
-//		}
-//	}
-//	//state = analyzing;
-//	//state = sending;
+
+	switch(systemState) {
+	case systemState_waiting:
+		if (keypadKey == '#') {
+			systemState = systemState_selecting;
+			lcdState = lcdState_selecting;
+		}
+		break;
+
+	case systemState_selecting:
+		lcdState = lcdState_selecting;
+		switch(keypadKey) {
+		case '1':
+			pwmState = pwmState_dial;
+			systemState = systemState_waiting;
+			lcdState = lcdState_updateMode;
+			break;
+		case '2':
+			pwmState = pwmState_light;
+			systemState = systemState_waiting;
+			lcdState = lcdState_updateMode;
+			break;
+		case '3':
+			pwmState = pwmState_sweep;
+			systemState = systemState_waiting;
+			lcdState = lcdState_updateMode;
+			break;
+		case '4':
+			pwmState = pwmState_servoUart;
+			systemState = systemState_waiting;
+			lcdState = lcdState_updateMode;
+			break;
+		case '5':
+			pwmState = pwmState_motorUart;
+			systemState = systemState_waiting;
+			lcdState = lcdState_updateMode;
+			break;
+		default: break;
+		}
+		break;
+
+	default:
+		break;
+	}
 	PORTD->ISFR = 0xF;
 }
 

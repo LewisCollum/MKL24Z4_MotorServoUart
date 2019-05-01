@@ -6,8 +6,10 @@
 
 enum Pin {
 	pin_gpio = 0x100,
-	pin_pullup = 0x3,
-	pin_interrupt = 0xA0000
+	pin_pullup = 0x3, //slow slew too
+	pin_interruptFalling = 0xA0000,
+	pin_interruptRising = 0x90000,
+	pin_filter = 0b10000
 };
 
 enum GpioDirection {

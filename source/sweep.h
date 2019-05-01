@@ -11,10 +11,14 @@ struct Sweep {
 	uint32_t lastMillis;
 };
 
-void sweep_setRange(struct Sweep* sweep, struct RangePair sweepRange);
 void sweep_setUpdateMillis(struct Sweep* sweep, uint32_t updateMillis);
+
 void sweep_setPeriod(struct Sweep* sweep, uint16_t millis);
+const struct RangePair sweep_getRange(struct Sweep* sweep);
+
 void sweep_setPosition(struct Sweep* sweep, int32_t position);
+const int32_t sweep_getPosition(struct Sweep* sweep);
+
 void sweep_update(struct Sweep* sweep, uint32_t currentMillis);
 
 #endif

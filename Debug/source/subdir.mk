@@ -6,32 +6,50 @@
 C_SRCS += \
 ../source/ADC_PWM.c \
 ../source/adc.c \
+../source/delay.c \
+../source/keypad.c \
+../source/lcd.c \
+../source/lcd_state.c \
 ../source/mapper.c \
 ../source/mtb.c \
 ../source/pwm.c \
 ../source/range_pair.c \
+../source/semihost_hardfault.c \
 ../source/sweep.c \
-../source/tick.c 
+../source/tick.c \
+../source/uart.c 
 
 OBJS += \
 ./source/ADC_PWM.o \
 ./source/adc.o \
+./source/delay.o \
+./source/keypad.o \
+./source/lcd.o \
+./source/lcd_state.o \
 ./source/mapper.o \
 ./source/mtb.o \
 ./source/pwm.o \
 ./source/range_pair.o \
+./source/semihost_hardfault.o \
 ./source/sweep.o \
-./source/tick.o 
+./source/tick.o \
+./source/uart.o 
 
 C_DEPS += \
 ./source/ADC_PWM.d \
 ./source/adc.d \
+./source/delay.d \
+./source/keypad.d \
+./source/lcd.d \
+./source/lcd_state.d \
 ./source/mapper.d \
 ./source/mtb.d \
 ./source/pwm.d \
 ./source/range_pair.d \
+./source/semihost_hardfault.d \
 ./source/sweep.d \
-./source/tick.d 
+./source/tick.d \
+./source/uart.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

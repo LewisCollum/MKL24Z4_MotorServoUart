@@ -7,8 +7,8 @@ void sweep_setPeriod(struct Sweep* sweep, uint16_t millis) {
 	sweep->range = (struct RangePair){0, millis/sweep->updateMillis};
 }
 
-void sweep_setRange(struct Sweep* sweep, struct RangePair sweepRange) {
-	sweep->range = sweepRange;
+const struct RangePair sweep_getRange(struct Sweep* sweep) {
+	return sweep->range;
 }
 
 void sweep_setUpdateMillis(struct Sweep* sweep, uint32_t updateMillis) {
@@ -22,6 +22,10 @@ void sweep_setPosition(struct Sweep* sweep, int32_t position) {
 		sweep->position = sweep->range.max;
 	else
 		sweep->position = position;
+}
+
+const int32_t sweep_getPosition(struct Sweep* sweep) {
+	return sweep->position;
 }
 
 void updateIncrement(struct Sweep* sweep) {

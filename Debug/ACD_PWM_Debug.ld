@@ -5,7 +5,7 @@
  * Generated linker script file for MKL25Z128xxx4
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.23
- * MCUXpresso IDE v10.1.1 [Build 606] [2018-01-02]  on May 1, 2019 8:35:51 AM
+ * MCUXpresso IDE v10.1.1 [Build 606] [2018-01-02]  on May 1, 2019 11:16:22 AM
  */
 
 INCLUDE "ACD_PWM_Debug_library.ld"

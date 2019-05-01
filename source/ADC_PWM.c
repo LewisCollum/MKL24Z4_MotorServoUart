@@ -11,22 +11,18 @@
 #include "uart.h"
 #include "keypad.h"
 #include <string.h>
-
-void lcdInitDecorated() {
-	lcdInit();
-	lcdCommand(lcd4Bit | lcd2Line | lcdSkinny);
-	lcdCommand(lcdOn);
-	lcdCommand(lcdClear);
-	lcdEnableClearAtColumnMax(16);
-}
+#include <stdio.h>
 
 struct Sweep sweep;
+struct RangePair sweepPeriodRange = {800, 5000};
 
 struct PWM servo;
 struct RangePair servoDutyRange = {0.03, 0.135};
+struct RangePair angleRange = {0.0, 180.0};
 
 struct PWM motor;
 struct RangePair motorDutyRange = {0, 1};
+struct RangePair motorRange = {0, 100};
 
 struct PWM buzzer;
 struct RangePair buzzerFrequencyRange = {500, 2500};
@@ -59,6 +55,12 @@ static volatile enum SweepState {sweepState_disabled, sweepState_enabled} sweepS
 static char keypadKey;
 static char uartKey;
 static uint8_t adcSample;
+static char angleMessage[3];
+static uint32_t lcdLastUpdateMillis = 0;
+static uint32_t angle;
+static uint8_t uartBufferCount;
+static char uartBuffer[3];
+static uint8_t isBufferReady;
 
 void motor_init();
 void servo_init();
@@ -67,6 +69,7 @@ void dial_init();
 void light_init();
 void tick_init();
 void sweep_init();
+void lcdInitDecorated();
 
 void tick_handler();
 
@@ -87,6 +90,9 @@ int main() {
     keypad_init(&keypad);
     uartInit();
 
+	uartSend('H');
+	while(uartIsSending());
+
     __enable_irq();
 
     while (1) {
@@ -105,6 +111,9 @@ int main() {
 			mapper_init(&mapper, dialRange, buzzerFrequencyRange);
 			pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
 			pwm_setDuty(&buzzer, .5);
+
+			mapper_init(&mapper, dialRange, angleRange);
+			angle = mapper_map(&mapper, adcSample);
     		break;
 
     	case pwmState_light:
@@ -117,24 +126,47 @@ int main() {
 			mapper_init(&mapper, lightRange, buzzerFrequencyRange);
 			pwm_setFrequency(&buzzer, mapper_map(&mapper, adcSample));
 			pwm_setDuty(&buzzer, .5);
+
+			mapper_init(&mapper, lightRange, angleRange);
+			angle = mapper_map(&mapper, adcSample);
     		break;
 
     	case pwmState_sweep:
     		pwm_setDuty(&buzzer, 0);
     		pwm_setDuty(&motor, motorDutyRange.min);
+
     		sweep_update(&sweep, tick_getCurrentMillis());
+
+    		mapper_init(&mapper, dialRange, sweepPeriodRange);
+    		sweep_setPeriod(&sweep, mapper_map(&mapper, adcSample));
+
     		mapper_init(&mapper, sweep_getRange(&sweep), servoDutyRange);
     		pwm_setDuty(&servo, mapper_map(&mapper, sweep_getPosition(&sweep)));
+
+			mapper_init(&mapper, sweep_getRange(&sweep), angleRange);
+			angle = mapper_map(&mapper, sweep_getPosition(&sweep));
     		break;
 
     	case pwmState_servoUart:
     		pwm_setDuty(&motor, motorDutyRange.min);
     		pwm_setDuty(&buzzer, 0);
+
+    		if (isBufferReady) {
+				mapper_init(&mapper, angleRange, servoDutyRange);
+				angle = atoi(uartBuffer);
+				pwm_setDuty(&servo, mapper_map(&mapper, angle));
+    		}
     		break;
 
     	case pwmState_motorUart:
     		pwm_setDuty(&servo, servoDutyRange.min);
     		pwm_setDuty(&buzzer, 0);
+
+    		if (isBufferReady) {
+				mapper_init(&mapper, motorRange, motorDutyRange);
+				angle = atoi(uartBuffer);
+				pwm_setDuty(&motor, mapper_map(&mapper, angle));
+    		}
     		break;
 
     	}
@@ -149,8 +181,8 @@ int main() {
     		lcdClearRow(1);
     		char message[] = "Select [1-5]";
     		for (int i = 0; i <= 12; ++i) { //TODO add write string to LCD module
-    			uartSend(message[i]);
-    			while(uartIsSending());
+//    			uartSend(message[i]);
+//    			while(uartIsSending());
     			lcdWriteDataToRow(message[i], 0);
     		}
     		lcdState = lcdState_waiting;
@@ -160,19 +192,21 @@ int main() {
     		lcdClearRow(0);
     		lcdClearRow(1);
     		char modeMessage[] = "Mode: ";
-    		char keyCopy[1];
-    		strcpy(keyCopy, &keypadKey);
-    		strcat(modeMessage, keyCopy);
-    		for (int i = 0; i <= 7; ++i) { //TODO add write string to LCD module
+    		strcat(modeMessage, &keypadKey);
+    		for (int i = 0; i <= 6; ++i) { //TODO add write string to LCD module
     			uartSend(modeMessage[i]);
     			while(uartIsSending());
     			lcdWriteDataToRow(modeMessage[i], 0);
     		}
-    		lcdState = lcdState_waiting;
+    		lcdState = lcdState_updateAngle;
     		break;
 
     	case lcdState_updateAngle:
-    		//char angle[4] =
+    		lcdSetRowColumn(1, 0);
+    		sprintf(angleMessage, "%03d", angle);
+    		for (int i = 0; i < 3; ++i)
+    			lcdWriteDataToRow(angleMessage[i], 1);
+    		lcdState = lcdState_waiting;
     		break;
     	}
     	__enable_irq();
@@ -189,6 +223,10 @@ int main() {
 
     		case pwmState_light:
     			adc_convert(&light);
+    			break;
+
+    		case pwmState_sweep:
+    			adc_convert(&dial);
     			break;
 
     		default:
@@ -218,11 +256,28 @@ void tick_handler() {
 	default:
 		break;
 	}
+
+	if((tick_getCurrentMillis() - lcdLastUpdateMillis) > 100) {
+		switch(pwmState) {
+		default:
+			lcdState = lcdState_updateAngle;
+			break;
+		}
+		lcdLastUpdateMillis = tick_getCurrentMillis();
+	}
 }
 
 void UART0_IRQHandler() {
-	uartKey = UART0->D;
-	lcdWriteDataToRow(uartKey, 1);
+	uartBuffer[uartBufferCount] = UART0->D;
+	++uartBufferCount;
+
+	if(uartBufferCount > 2) {
+		uartBufferCount = 0;
+		isBufferReady = 1;
+	}
+	else isBufferReady = 0;
+
+	//lcdWriteDataToRow(uartKey, 1);
 }
 
 void PORTD_IRQHandler() {
@@ -274,6 +329,8 @@ void PORTD_IRQHandler() {
 	PORTD->ISFR = 0xF;
 }
 
+
+
 void buzzer_init()
 {
 	pwm_init(&buzzer, 2);
@@ -311,7 +368,7 @@ void dial_init()
 void tick_init()
 {
     tick_setHandler(tick_handler);
-    tick_run(1);
+    tick_run(10);
 }
 
 void sweep_init()
@@ -320,3 +377,12 @@ void sweep_init()
     sweep_setPeriod(&sweep, 800);
     sweep_setPosition(&sweep, sweep_getRange(&sweep).min);
 }
+
+void lcdInitDecorated() { //TODO move
+	lcdInit();
+	lcdCommand(lcd4Bit | lcd2Line | lcdSkinny);
+	lcdCommand(lcdOn);
+	lcdCommand(lcdClear);
+	lcdEnableClearAtColumnMax(16);
+}
+

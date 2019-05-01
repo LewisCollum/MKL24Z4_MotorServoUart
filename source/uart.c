@@ -20,7 +20,7 @@ void uartInit() {
 	PORTA->PCR[1] = 0x200;
 }
 
-void uartSend(unsigned char data) {
+void uartSend(char data) {
 	UART0->D = data;
 }
 

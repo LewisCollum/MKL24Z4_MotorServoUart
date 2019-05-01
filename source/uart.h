@@ -2,7 +2,7 @@
 #define UART_C_
 
 void uartInit();
-void uartSend(unsigned char data);
+void uartSend(char data);
 char uartIsSending();
 
 #endif
